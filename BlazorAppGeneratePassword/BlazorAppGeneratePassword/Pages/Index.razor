@@ -1,0 +1,94 @@
+﻿@page "/"
+@using Microsoft.Extensions.Logging
+@implements IDisposable
+
+<PageTitle>Index</PageTitle>
+
+<h1>Hello, world!</h1>
+
+Welcome to your new app.
+
+<EditForm EditContext="editContext" OnValidSubmit="@HandleValidSubmit">
+    <label>
+        英大文字:
+        <InputCheckbox @bind-Value="holodeck.Type1" />
+    </label>
+
+    <label>
+        英小文字:
+        <InputCheckbox @bind-Value="holodeck.Type2" />
+    </label>
+
+    <label>
+        数字:
+        <InputCheckbox @bind-Value="holodeck.Type3" />
+    </label>
+
+    <label>
+        記号:
+        <InputCheckbox @bind-Value="holodeck.Type4" />
+    </label>
+
+    <button class="btn btn-primary" @onclick="GeneratPassword">パスワード生成</button>
+
+    <p role="status">パスワード: @currentPassword</p>
+
+    <ValidationMessage For="() => holodeck.Options" />
+
+</EditForm>
+
+@code {
+    private EditContext? editContext;
+    private Holodeck holodeck = new();
+    private ValidationMessageStore? messageStore;
+    private string currentPassword = "";
+
+    protected override void OnInitialized()
+    {
+        editContext = new(holodeck);
+        editContext.OnValidationRequested += HandleValidationRequested;
+        messageStore = new(editContext);
+    }
+
+    private void HandleValidationRequested(object? sender, 
+        ValidationRequestedEventArgs args)
+    {
+        messageStore?.Clear();
+
+        // Custom validation logic
+        if (!holodeck.Options)
+        {
+            messageStore?.Add(() => holodeck.Options, "Select at least one.");
+        }
+    }
+
+    private void HandleValidSubmit()
+    {
+        //Logger.LogInformation("HandleValidSubmit called: Processing the form");
+
+        // Process the form
+    }
+
+    public class Holodeck
+    {
+        public bool Type1 { get; set; }
+        public bool Type2 { get; set; }
+        public bool Type3 { get; set; }
+        public bool Type4 { get; set; }
+        public bool Options => Type1 || Type2 || Type3 || Type4;
+    }
+
+    public void Dispose()
+    {
+        if (editContext is not null)
+        {
+            editContext.OnValidationRequested -= HandleValidationRequested;
+        }
+    }
+
+    private void GeneratPassword()
+    {
+        var p = new BlazorAppGeneratePassword.RandomPassword();
+        currentPassword = p.Generate(16, holodeck.Type1, holodeck.Type2, holodeck.Type3, holodeck.Type4);
+    }
+}
